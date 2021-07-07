@@ -1,7 +1,9 @@
 from configuration import HCP_DIR,\
-	N_PARCELS, EXPERIMENTS, TR
+	N_PARCELS, EXPERIMENTS, TR,\
+	N_SUBJECTS, RESULT_DIR
 
 import numpy as np
+import pandas as pd
 
 # Page 49-50: https://www.humanconnectome.org/storage/app/media/documentation/s1200/HCP_S1200_Release_Reference_Manual.pdf
 
@@ -37,7 +39,6 @@ def load_single_timeseries(subject, experiment, run, remove_mean=True):
 		ts -= ts.mean(axis=1, keepdims=True)
 	return ts
 
-
 def load_evs(subject, experiment, run):
 	"""Load EVs (explanatory variables) data for one task experiment.
 
@@ -53,7 +54,7 @@ def load_evs(subject, experiment, run):
 	task_key = 'tfMRI_'+experiment+'_'+['RL','LR'][run]
 	for cond in EXPERIMENTS[experiment]['cond']:    
 		ev_file  = f"{HCP_DIR}/subjects/{subject}/EVs/{task_key}/{cond}.txt"
-		ev_array = np.loadtxt(ev_file, ndmin=2, unpack=True)
+		ev_array = np.loadtxt(ev_file, ndmin=2, unpack=True) #all (3, 1) shaped for _init_conds
 		ev       = dict(zip(["onset", "duration", "amplitude"], ev_array))
 		# Determine when trial starts, rounded down
 		start = np.floor(ev["onset"] / TR).astype(int)
@@ -62,10 +63,7 @@ def load_evs(subject, experiment, run):
 		# Take the range of frames that correspond to this specific trial
 		frames = [s + np.arange(0, d) for s, d in zip(start, duration)]
 		frames_list.append(frames)
-
 	return frames_list
-
-# we need a little function that averages all frames from any given condition
 
 def average_frames(data, evs, experiment, cond):
 	"""Averages all frames from any given condition.
