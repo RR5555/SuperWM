@@ -1,3 +1,4 @@
+Psy's note on his file:
 The associated sheet contains trial counts (EVENT EVs) for all subjects and runs into one file.
 NB: Missed trials seems to be included in Incorrect trials, thus:
 correct + incorrect = 40
