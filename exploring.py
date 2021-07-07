@@ -1,6 +1,9 @@
+from numpy.lib.npyio import load
 from configuration import HCP_DIR, N_SUBJECTS, TASK_KEY, RESULT_DIR, ATLAS_FILE
 from help_fct import load_single_timeseries,\
-    load_evs, average_frames, get_region_info
+	load_evs, average_frames, get_region_info
+from event_data import check_EVENT_cond_shape_pd_df,\
+	load_EVENT_cond_shape_pd_df, get_ev_value
 
 import os
 import matplotlib
@@ -28,9 +31,28 @@ plt.plot(data)
 plt.savefig(RESULT_DIR+'/test_single_timeseries.pdf', backend='pdf')
 plt.close()
 
+## Test if all subjects over all runs in WM have an ev_array of shape (3,1)
+# for _subj in range(N_SUBJECTS):
+# 	for _run in (0,1):
+# 		load_evs(subject=_subj, experiment=my_exp,run=_run)
+# exit()
+#All subjects have a (3,1) ev_array for the init_conds but not for ord_conds
+
+###### On EVENT cond ###############
+EVENT_cond=('0bk_cor', '0bk_err',  '0bk_nlr', '2bk_cor', '2bk_err',  '2bk_nlr', 'all_bk_cor', 'all_bk_err', 'Sync')
+
+shape_file_path = RESULT_DIR+'/file_csv.csv'
+check_EVENT_cond_shape_pd_df(shape_file_path)
+pd_df = load_EVENT_cond_shape_pd_df(shape_file_path)
+print(pd_df.head(40))
+print(get_ev_value(subject=0, experiment='WM', run='LR', cond='2bk_err'))
+# exit()
+####################################
+
 evs = load_evs(subject=my_subj, experiment=my_exp,run=my_run)
 
 body_activity = average_frames(data, evs, my_exp, '0bk_body')
+# nlr_activity = average_frames(data, evs, my_exp, '0bk_nlr') #TRIAL
 faces_activity = average_frames(data, evs, my_exp, '0bk_faces')
 contrast = body_activity-faces_activity   # difference between left and right hand movement
 print(f'contrast.shape:{contrast.shape}')
@@ -48,9 +70,9 @@ region_info = get_region_info()
 
 
 df = pd.DataFrame({'body_activity' : body_activity,
-                   'faces_activity' : faces_activity,
-                   'network'     : region_info['network'],
-                   'hemi'        : region_info['hemi']})
+					'faces_activity' : faces_activity,
+					'network'     : region_info['network'],
+					'hemi'        : region_info['hemi']})
 
 fig,(ax1,ax2) = plt.subplots(1,2)
 sns.barplot(y='network', x='body_activity', data=df, hue='hemi',ax=ax1)
@@ -61,15 +83,15 @@ plt.close()
 subjects = range(N_SUBJECTS)
 group_contrast = 0
 for s in subjects:
-  for r in [0,1]:
-    data = load_single_timeseries(subject=s,experiment=my_exp,run=r,remove_mean=True)
-    evs = load_evs(subject=s, experiment=my_exp,run=r)
+	for r in [0,1]:
+		data = load_single_timeseries(subject=s,experiment=my_exp,run=r,remove_mean=True)
+		evs = load_evs(subject=s, experiment=my_exp,run=r)
 
-    body_activity = average_frames(data, evs, my_exp, '0bk_body')
-    faces_activity = average_frames(data, evs, my_exp, '0bk_faces')
+		body_activity = average_frames(data, evs, my_exp, '0bk_body')
+		faces_activity = average_frames(data, evs, my_exp, '0bk_faces')
 
-    contrast    = body_activity-faces_activity
-    group_contrast        += contrast
+		contrast    = body_activity-faces_activity
+		group_contrast        += contrast
 
 group_contrast /= (len(subjects)*2)  # remember: 2 sessions per subject
 
@@ -81,11 +103,11 @@ plt.close()
 
 
 with np.load(ATLAS_FILE) as dobj:
-  atlas = dict(**dobj)
+	atlas = dict(**dobj)
 
 # Try both hemispheres (L->R and left->right)
 fsaverage = datasets.fetch_surf_fsaverage(data_dir=RESULT_DIR)
 surf_contrast = group_contrast[atlas["labels_L"]]
 plotting.view_surf(fsaverage['infl_left'],
-                   surf_contrast,
-                   vmax=20).save_as_html(RESULT_DIR+'/test_surf.html')
+					surf_contrast,
+					vmax=20).save_as_html(RESULT_DIR+'/test_surf.html')
