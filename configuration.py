@@ -28,7 +28,7 @@ _ord_conds = ('0bk_body', '0bk_faces', '0bk_places', '0bk_tools',
 	'0bk_cor', '0bk_err',  '0bk_nlr', '2bk_cor', '2bk_err',  '2bk_nlr',
 	'all_bk_cor', 'all_bk_err', 'Sync')
 
-_init_conds = ['0bk_body','0bk_faces','0bk_places','0bk_tools',
+INIT_CONDS = ['0bk_body','0bk_faces','0bk_places','0bk_tools',
 				'2bk_body','2bk_faces','2bk_places','2bk_tools']
 
 EXPERIMENTS = {

@@ -1,5 +1,8 @@
 from configuration import EXPERIMENTS,\
-    HCP_DIR, N_SUBJECTS
+    HCP_DIR, N_SUBJECTS, RESULT_DIR,\
+	TR
+from help_fct import load_single_timeseries
+from save_N_load import save_obj, load_obj
 
 import numpy as np
 import pandas as pd
@@ -84,3 +87,93 @@ def get_ev_value(subject, experiment, run, cond):
 	task_key = 'tfMRI_'+experiment+'_'+run
 	ev_file  = f"{HCP_DIR}/subjects/{subject}/EVs/{task_key}/{cond}.txt"
 	return np.loadtxt(ev_file, ndmin=2, unpack=True)
+
+def get_onset_N_duration(subject, run, cond):
+	_array = get_ev_value(subject=subject, experiment='WM', run=run, cond=cond).tolist()
+	# print(_array)
+	if len(_array) == 3:
+		_onset = _array[0]
+		_duration = _array[1]
+		return _onset, _duration
+	return [], None
+
+def dict_timestamps():
+	block_cond = ('0bk_body', '0bk_faces', '0bk_places', '0bk_tools',
+		'2bk_body', '2bk_faces', '2bk_places', '2bk_tools')
+	run_type = ('LR', 'RL')
+	restricted_event_cond = ('0bk_cor', '0bk_err',  '0bk_nlr', '2bk_cor', '2bk_err',  '2bk_nlr')
+
+	_dict = {subj:{run:{cond:None for cond in block_cond} for run in run_type} for subj in range(N_SUBJECTS)}
+	for subj in range(N_SUBJECTS):
+		for run in run_type:
+			for cond in block_cond:
+				block_onset, block_duration = get_onset_N_duration(subject=subj, run=run, cond=cond)
+				event_onsets = []
+				event_onset_type = []
+				event_durations = []
+				for event_cond in restricted_event_cond:
+					event_onset, event_duration = get_onset_N_duration(subject=subj, run=run, cond=event_cond)
+					if event_duration is not None:
+						for event, duration in zip(event_onset, event_duration):
+							if block_onset[0] <= event <= block_onset[0]+block_duration[0]:
+								event_onsets.append(event)
+								event_durations.append(duration)
+								event_onset_type.append(event_cond[-3:])
+				_dict[subj][run][cond]=(block_onset[0], block_duration[0], event_onsets, event_onset_type, event_durations)
+	return _dict
+
+def get_dict_timestamps():
+	print('Getting dict timestamps.')
+	if not os.path.exists(RESULT_DIR+'/timestamps.pkl'):
+		print('Creating the dict:')
+		_dict = dict_timestamps()
+		save_obj(_dict, RESULT_DIR+'/timestamps')
+		print('\t Dict created and saved')
+	else:
+		print('Loading the dict:')
+		_dict = load_obj(RESULT_DIR+'/timestamps')
+		print('\t Dict loaded')
+	return _dict
+
+def get_frames(_onset, _duration):
+	start = np.floor(_onset / TR).astype(int)
+	duration = np.ceil(_duration / TR).astype(int)
+	frames = start + np.arange(0, duration) 
+	return frames
+
+def dict_timeframes(_dict_timestamps):
+	block_cond = ('0bk_body', '0bk_faces', '0bk_places', '0bk_tools',
+		'2bk_body', '2bk_faces', '2bk_places', '2bk_tools')
+	run_type = ('LR', 'RL')
+	abridged_event_cond = ('cor', 'err',  'nlr')
+
+	_dict = {subj:{run:{cond:{event_cond:None for event_cond in list(abridged_event_cond)+['block', 'cue']} for cond in block_cond} for run in run_type} for subj in range(N_SUBJECTS)}
+	for subj in range(N_SUBJECTS):
+		for run in run_type:
+			for cond in block_cond:
+				block_onset, block_duration, event_onsets, event_onset_type, event_durations = _dict_timestamps[subj][run][cond]
+				_dict[subj][run][cond]['block']= get_frames(_onset=block_onset, _duration=block_duration)
+				_dict[subj][run][cond]['cue']= get_frames(_onset=block_onset, _duration=2.5)
+				for event_cond in abridged_event_cond:
+					_index = [_i for _i, _type in enumerate(event_onset_type) if _type==event_cond]
+					_dict[subj][run][cond][event_cond]= [get_frames(_onset=event_onsets[_i], _duration=event_durations[_i]) for _i in _index]
+	return _dict
+
+def get_dict_timeframes():
+	print('Getting dict timeframes.')
+	if not os.path.exists(RESULT_DIR+'/timeframes.pkl'):
+		print('Creating the dict:')
+		_dict = dict_timeframes(_dict_timestamps=get_dict_timestamps())
+		save_obj(_dict, RESULT_DIR+'/timeframes')
+		print('\t Dict created and saved')
+	else:
+		print('Loading the dict:')
+		_dict = load_obj(RESULT_DIR+'/timeframes')
+		print('\t Dict loaded')
+	return _dict
+
+_dict_timeframes = get_dict_timeframes()
+def get_timeseries(subject, run, cond, event):
+	data =load_single_timeseries(subject=subject,experiment='WM',run= 0 if run=='RL' else 1,remove_mean=True)
+	timeseries = [data[:,frames] for frames in _dict_timeframes[subject][run][cond][event]]
+	return timeseries
