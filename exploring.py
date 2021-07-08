@@ -1,9 +1,13 @@
 from numpy.lib.npyio import load
-from configuration import HCP_DIR, N_SUBJECTS, TASK_KEY, RESULT_DIR, ATLAS_FILE
+from pandas.core import frame
+from configuration import HCP_DIR, N_SUBJECTS, TASK_KEY, RESULT_DIR, ATLAS_FILE, INIT_CONDS, TR
 from help_fct import load_single_timeseries,\
 	load_evs, average_frames, get_region_info
 from event_data import check_EVENT_cond_shape_pd_df,\
-	load_EVENT_cond_shape_pd_df, get_ev_value
+	load_EVENT_cond_shape_pd_df, get_ev_value,\
+	get_dict_timestamps, get_onset_N_duration,\
+	get_dict_timeframes, get_timeseries
+from save_N_load import save_obj, load_obj
 
 import os
 import matplotlib
@@ -41,12 +45,35 @@ plt.close()
 ###### On EVENT cond ###############
 EVENT_cond=('0bk_cor', '0bk_err',  '0bk_nlr', '2bk_cor', '2bk_err',  '2bk_nlr', 'all_bk_cor', 'all_bk_err', 'Sync')
 
-shape_file_path = RESULT_DIR+'/file_csv.csv'
-check_EVENT_cond_shape_pd_df(shape_file_path)
-pd_df = load_EVENT_cond_shape_pd_df(shape_file_path)
-print(pd_df.head(40))
-print(get_ev_value(subject=0, experiment='WM', run='LR', cond='2bk_err'))
-# exit()
+# shape_file_path = RESULT_DIR+'/file_csv.csv'
+# check_EVENT_cond_shape_pd_df(shape_file_path)
+# pd_df = load_EVENT_cond_shape_pd_df(shape_file_path)
+# print(pd_df.head(40))
+
+# print(get_ev_value(subject=0, experiment='WM', run='LR', cond='2bk_err'))
+# print(f"{''.join(['#']*40)}")
+# for cond in ('0bk_cor', '0bk_err',  '0bk_nlr', '0bk_body','0bk_faces','0bk_places','0bk_tools'):
+# 	print(f"{cond}:{get_ev_value(subject=0, experiment='WM', run='LR', cond=cond)}")
+
+
+
+# _dict_timestamps = get_dict_timestamps()
+# for cond in INIT_CONDS:
+# 	for run in ('RL', 'LR'):
+# 		print(f"{cond},{run}:{_dict_timestamps[1][run][cond]}")
+
+# _dict_timeframes = get_dict_timeframes()
+# print(_dict_timeframes[0]['LR']['2bk_body']['cor'])
+
+# the possible events for the 'event' argument: ('block', 'cue', 'cor', 'err',  'nlr')
+ts = get_timeseries(subject=0, run='LR', cond='2bk_body', event='cor')[0]
+plt.plot(ts)
+plt.legend([f'{_i}' for _i in range(len(ts))])
+plt.savefig(RESULT_DIR+'/test_event_single_timeseries.pdf', backend='pdf')
+plt.close()
+
+# print(_dict[0]['LR']['2bk_places'])
+exit()
 ####################################
 
 evs = load_evs(subject=my_subj, experiment=my_exp,run=my_run)
