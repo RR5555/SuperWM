@@ -16,6 +16,7 @@ HEMIS = ["Right", "Left"]
 
 # Each experiment was repeated twice in each subject
 N_RUNS = 2
+RUNS = ('LR', 'RL')
 
 # There are 7 tasks. Each has a number of 'conditions'
 
