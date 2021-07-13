@@ -1,5 +1,5 @@
 # SuperWM
-SuperWM (Virtual pogs/NMA-CN)
+SuperWM (Virtual pugs/NMA-CN)
 
 After installing the required python libs ('_pip_install.sh') in your python env or in your docker,
 you can run in the project directory:
