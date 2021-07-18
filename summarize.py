@@ -107,6 +107,7 @@ def get_range_per_parcel(_loading_fct, _subjects, remove_mean):
 			accumulated += _tmp.shape[1]
 	return max, min, mean/accumulated
 
+# https://towardsdatascience.com/the-best-format-to-save-pandas-data-414dca023e0d
 def get_summary_on_all_parcels(_title, _remove_mean, _path):
 	print_same_in(f"\n{''.join(['#']*20)}\n{_title}", '')
 	_max, _min, _mean = get_range_per_parcel(_loading_fct=load_single_timeseries, _subjects=range(N_SUBJECTS), remove_mean=_remove_mean)
