@@ -1,6 +1,8 @@
 from numpy.lib.npyio import load
 from pandas.core import frame
-from configuration import HCP_DIR, N_SUBJECTS, TASK_KEY, RESULT_DIR, ATLAS_FILE, INIT_CONDS, TR
+from shared_configuration import HCP_DIR, RESULT_DIR, ATLAS_FILE, INIT_CONDS, TR, RUNS
+from configuration import N_SUBJECTS, TASK_KEY
+from beh_configuration import BEH_SUBJECT_LOC
 from help_fct import load_single_timeseries,\
 	load_evs, average_frames, get_region_info
 from event_data import check_EVENT_cond_shape_pd_df,\
@@ -18,6 +20,9 @@ import pandas as pd
 import seaborn as sns
 
 from nilearn import plotting, datasets
+
+subjects = range(N_SUBJECTS)
+beh_subjects = np.loadtxt(BEH_SUBJECT_LOC,dtype='str')
 
 subject=0
 run=1
@@ -71,6 +76,31 @@ plt.plot(ts)
 plt.legend([f'{_i}' for _i in range(len(ts))])
 plt.savefig(RESULT_DIR+'/test_event_single_timeseries.pdf', backend='pdf')
 plt.close()
+
+plt.matshow(ts)
+plt.ylabel('ROI')
+plt.xlabel('time')
+plt.savefig(RESULT_DIR+'/test_event_single_timeseries_mat.pdf', backend='pdf')
+plt.close()
+
+# Exp1: contrast 2-back vs 0-back averaged on all conditions
+_0bk_data = []
+_2bk_data = []
+for subject in range(N_SUBJECTS):
+	for run in RUNS:
+		for cond in INIT_CONDS:
+			if '0bk' in cond:
+				_0bk_data.extend(get_timeseries(subject=subject, run=run, cond=cond, event='block'))
+			if '2bk' in cond:
+				_2bk_data.extend(get_timeseries(subject=subject, run=run, cond=cond, event='block'))
+np_0bk_data = np.array(_0bk_data)
+np_2bk_data = np.array(_2bk_data)
+# save_obj(np_0k_back, RESULT_DIR+'/np_0k_back')
+# save_obj(np_2k_back, RESULT_DIR+'/np_2k_back')
+np.savez_compressed(file=RESULT_DIR+'/np_0bk_data',np_0k_back=np_0bk_data)
+np.savez_compressed(file=RESULT_DIR+'/np_2bk_data',np_2k_back=np_2bk_data)
+print(f'np_0k_back:{np_0bk_data.shape}')
+print(f'np_2k_back:{np_2bk_data.shape}')
 
 # print(_dict[0]['LR']['2bk_places'])
 exit()
