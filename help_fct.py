@@ -1,6 +1,6 @@
-from configuration import HCP_DIR,\
-	N_PARCELS, EXPERIMENTS, TR,\
-	N_SUBJECTS, RESULT_DIR
+from shared_configuration import N_PARCELS, TR, HCP_DIR, RUNS
+from beh_configuration import HCP_BEH_DIR
+from configuration import EXPERIMENTS
 
 import numpy as np
 import pandas as pd
@@ -38,6 +38,27 @@ def load_single_timeseries(subject, experiment, run, remove_mean=True):
 	if remove_mean:
 		ts -= ts.mean(axis=1, keepdims=True)
 	return ts
+
+def beh_load_single_timeseries(subject, experiment, run, remove_mean=True):
+  """Load timeseries data for a single subject and single run.
+  
+  Args:
+    subject (str):      subject ID to load
+    experiment (str):   Name of experiment 
+    run (int):          (0 or 1)
+    remove_mean (bool): If True, subtract the parcel-wise mean (typically the mean BOLD signal is not of interest)
+
+  Returns
+    ts (n_parcel x n_timepoint array): Array of BOLD data values
+
+  """
+  bold_run  = RUNS[run]
+  bold_path = f"{HCP_BEH_DIR}/subjects/{subject}/{experiment}/tfMRI_{experiment}_{bold_run}"
+  bold_file = "data.npy"
+  ts = np.load(f"{bold_path}/{bold_file}")
+  if remove_mean:
+    ts -= ts.mean(axis=1, keepdims=True)
+  return ts
 
 def load_evs(subject, experiment, run):
 	"""Load EVs (explanatory variables) data for one task experiment.

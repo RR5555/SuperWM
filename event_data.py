@@ -1,6 +1,5 @@
-from configuration import EXPERIMENTS,\
-    HCP_DIR, N_SUBJECTS, RESULT_DIR,\
-	TR
+from configuration import EXPERIMENTS, N_SUBJECTS
+from shared_configuration import HCP_DIR, RESULT_DIR, TR
 from help_fct import load_single_timeseries
 from save_N_load import save_obj, load_obj
 

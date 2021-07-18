@@ -1,6 +1,8 @@
 from numpy.lib.npyio import load
 from pandas.core import frame
-from configuration import HCP_DIR, N_SUBJECTS, TASK_KEY, RESULT_DIR, ATLAS_FILE, INIT_CONDS, TR, RUNS
+from shared_configuration import HCP_DIR, RESULT_DIR, ATLAS_FILE, INIT_CONDS, TR, RUNS
+from configuration import N_SUBJECTS, TASK_KEY
+from beh_configuration import BEH_SUBJECT_LOC
 from help_fct import load_single_timeseries,\
 	load_evs, average_frames, get_region_info
 from event_data import check_EVENT_cond_shape_pd_df,\
@@ -18,6 +20,9 @@ import pandas as pd
 import seaborn as sns
 
 from nilearn import plotting, datasets
+
+subjects = range(N_SUBJECTS)
+beh_subjects = np.loadtxt(BEH_SUBJECT_LOC,dtype='str')
 
 subject=0
 run=1

@@ -2,6 +2,8 @@ venv
 *__pycache__*
 results
 hcp
+hcp_beh
 *.mustache
 hcp_task.tgz
+hcp_beh_task.tgz
 *.code-workspace
