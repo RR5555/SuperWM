@@ -14,6 +14,9 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from itertools import product
+from nilearn.glm.first_level import make_first_level_design_matrix, run_glm
+from nilearn.plotting import plot_design_matrix
+from matplotlib import pyplot as plt
 
 # %% Data-specific environment variables
 # Voxel data has already been aggregated into ROIs from the Glasser parcellation
@@ -270,8 +273,9 @@ def extract_task_activity(timeseries, legacy_EVs):
     ----------
     timeseries : pd.DataFrame, shape = (405, 360+3)
         Dataframe containing raw BOLD activity with region labels.
-    legacy_EVs : pd.DataFrame
+    legacy_EVs : pd.DataFrame, shape = (312, 3)
         Dataframe containing frame-by-frame identifiers for condition & stimulus.
+        Obtain using load_single_EVs_legacy()
 
     Returns
     -------
@@ -287,3 +291,26 @@ def extract_task_activity(timeseries, legacy_EVs):
     dat["stimulus"] = legacy_EVs["stimulus"].to_numpy()
 
     return dat
+
+
+def construct_design_matrix(EVs):
+    """
+    Construct full design matrix for trial-level estimates of first-level betas.
+    Uses 'spm' HRF model with polynomial (5) order drift and without derivatives.
+
+    Parameters
+    ----------
+    EVs : pd.DataFrame
+        Dataframe with onsets and metadata for all 80 trials in specified run.
+        Obtain using load_single_EVs()
+
+    Returns
+    -------
+    design_matrix : pd.DataFrame
+        Dataframe containing full design matrix with columns as regressors.
+
+    """
+    frame_times = frame_times = np.arange(0, TR * 405, TR)
+    design_matrix = make_first_level_design_matrix(frame_times, EVs, hrf_model="spm")
+
+    return design_matrix
