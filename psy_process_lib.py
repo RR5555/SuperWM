@@ -13,6 +13,7 @@ for such a pipeline.
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from itertools import product
 
 # %% Data-specific environment variables
 # Voxel data has already been aggregated into ROIs from the Glasser parcellation
@@ -79,6 +80,86 @@ def load_regions(fname):
     )
 
     return region_info
+
+
+def load_single_EVs(HCP_DIR, subject, run):
+    """
+    Load explanatory variables with onsets, conditions, accuracies, stimulus identifiers
+
+    Parameters
+    ----------
+    HCP_DIR : str or Path object
+        Full path to root directory containing dataset.
+    subject : int
+        Subject ID to load.
+    run : str
+        Run to load, LR: 7, RL: 8.
+
+    Returns
+    -------
+    df : pd.DataFrame
+        Dataframe with onsets and metadata for all 80 trials in specified run.
+
+    """
+    # Prepare path to EV files
+    f = Path(HCP_DIR) / f"subjects/{subject}/EVs/tfMRI_WM_{run}"
+
+    # Read files containing trial onsets for correct and incorrect trials
+    df_cor = pd.read_csv(
+        f / "all_bk_cor.txt",
+        header=None,
+        sep="\t",
+        names=["onset", "duration", "modulation"],
+    )
+    df_err = pd.read_csv(
+        f / "all_bk_err.txt",
+        header=None,
+        sep="\t",
+        names=["onset", "duration", "modulation"],
+    )
+
+    df_cor["accuracy"] = "correct"
+    df_err["accuracy"] = "incorrect"
+
+    # Concatenate both, add subject/run identifiers, placeholders for condition/stimulus
+    df = pd.concat([df_cor, df_err]).sort_values("onset").reset_index(drop=True)
+    df["condition"] = ""
+    df["stimulus"] = ""
+    df["trial_type"] = [f"trial_{x:03}" for x in range(len(df))]
+    df["subject"] = subject
+    df["run"] = run
+
+    # Iterate over individual files with block onsets and aggregate
+    df_block_onsets = []
+    for cond, stim in product(["0bk", "2bk"], ["body", "faces", "places", "tools"]):
+        dat = pd.read_csv(
+            f / f"{cond}_{stim}.txt",
+            header=None,
+            sep="\t",
+            names=["onset", "duration", "modulation"],
+        )
+
+        # Add condition and stimulus identifiers
+        dat["condition"] = cond
+        dat["stimulus"] = stim
+
+        df_block_onsets.append(dat)
+
+    # Combine aggregated block onsets
+    df_block_onsets = pd.concat(df_block_onsets)
+    df_block_onsets = df_block_onsets.sort_values("onset").reset_index(drop=True)
+
+    # Merge stimulus and condition labels based on block onsets
+    for n, row in df_block_onsets.iterrows():
+
+        # Get first 10 trials with onsets occurring after a block onset
+        idx = df[row["onset"] < df["onset"]].index[:10]  # 1 block = 10 trials in exp
+
+        # Update identifiers
+        df.loc[idx, "condition"] = row["condition"]
+        df.loc[idx, "stimulus"] = row["stimulus"]
+
+    return df
 
 
 def load_single_timeseries(HCP_DIR, subject, run, regions, remove_mean=True):
