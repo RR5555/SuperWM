@@ -380,8 +380,12 @@ def compute_betas(timeseries, EVs):
     betas = fit_first_level_glm(timeseries, design_matrix)
 
     # Add identifiers and return
-    betas = betas.join(
-        pd.concat([EVs.set_index("trial_type")], axis=1, keys=["identifiers"])
+    betas = (
+        betas.join(
+            pd.concat([EVs.set_index("trial_type")], axis=1, keys=["identifiers"])
+        )
+        .reset_index()
+        .rename(columns={"index": "trial_number"})
     )
 
     return betas
