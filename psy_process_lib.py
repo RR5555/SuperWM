@@ -93,7 +93,7 @@ def load_single_EVs(HCP_DIR, subject, run):
     subject : int
         Subject ID to load.
     run : str
-        Run to load, LR: 7, RL: 8.
+        Run to load, LR or RL.
 
     Returns
     -------
@@ -158,6 +158,60 @@ def load_single_EVs(HCP_DIR, subject, run):
         # Update identifiers
         df.loc[idx, "condition"] = row["condition"]
         df.loc[idx, "stimulus"] = row["stimulus"]
+
+    return df
+
+
+def load_single_EVs_legacy(HCP_DIR, subject, run):
+    """
+    Load explanatory variables with condition & stimulus identifiers, with frame numbers
+    Note: This does not contain onsets in units of time, avoid for GLM, legacy version
+    based on code from notebook provided in NMA-CN.
+
+    Parameters
+    ----------
+    HCP_DIR : str or Path object
+        Full path to root directory containing dataset.
+    subject : int
+        Subject ID to load.
+    run : str
+        Run to load, LR or RL.
+
+    Returns
+    -------
+    df : pd.DataFrame
+        Dataframe containing frame-by-frame identifiers for condition & stimulus.
+
+    """
+    frames_list = []
+
+    # Iterate over individual files with block onsets
+    for cond, stim in product(["0bk", "2bk"], ["body", "faces", "places", "tools"]):
+
+        # Load data
+        ev_file = f"{HCP_DIR}/subjects/{subject}/EVs/tfMRI_WM_{run}/{cond}_{stim}.txt"
+        ev_array = np.loadtxt(ev_file, ndmin=2, unpack=True)
+        ev = dict(zip(["onset", "duration", "amplitude"], ev_array))
+
+        # Determine when trial starts, rounded down
+        start = np.floor(ev["onset"] / TR).astype(int)
+
+        # Use trial duration to determine how many frames to include for trial
+        duration = np.ceil(ev["duration"] / TR).astype(int)
+
+        # Take the range of frames that correspond to this specific block
+        frames = [s + np.arange(0, d) for s, d in zip(start, duration)]
+        frames_list.append(
+            {"condition": cond, "stimulus": stim, "frame_idx": frames[0]}
+        )
+
+    # Convert messy list of dicts to clean dataframe with identifiers
+    df = (
+        pd.DataFrame(frames_list)
+        .explode("frame_idx")
+        .sort_values("frame_idx")
+        .reset_index(drop=True)
+    )
 
     return df
 
