@@ -212,6 +212,8 @@ def load_single_EVs_legacy(HCP_DIR, subject, run):
         .sort_values("frame_idx")
         .reset_index(drop=True)
     )
+    df["subject"] = subject
+    df["run"] = run
 
     return df
 
@@ -252,7 +254,36 @@ def load_single_timeseries(HCP_DIR, subject, run, regions, remove_mean=True):
 
     # Convert to Dataframe, add identifiers and return
     ts = pd.DataFrame(ts, index=[regions["name"], regions["network"]]).T
-    ts["Subject"] = subject
-    ts["Run"] = run
+    ts["subject"] = subject
+    ts["run"] = run
+    ts["frame_idx"] = range(len(ts))
 
     return ts
+
+
+def extract_task_activity(timeseries, legacy_EVs):
+    """
+    Extract 312 frames containing task activity from full activity matrix, given legacy
+    frame-by-frame EVs
+
+    Parameters
+    ----------
+    timeseries : pd.DataFrame, shape = (405, 360+3)
+        Dataframe containing raw BOLD activity with region labels.
+    legacy_EVs : pd.DataFrame
+        Dataframe containing frame-by-frame identifiers for condition & stimulus.
+
+    Returns
+    -------
+    dat : pd.DataFrame, shape = (312, 360+5)
+        Dataframe containing raw BOLD activity with region labels & frame-by-frame EVs.
+
+    """
+    # Index subset of frames based on frame indices for each block in legacy_EVs
+    dat = timeseries.loc[legacy_EVs["frame_idx"].to_numpy(dtype="int"), :]
+
+    # Add condition and stimulus identifiers
+    dat["condition"] = legacy_EVs["condition"].to_numpy()
+    dat["stimulus"] = legacy_EVs["stimulus"].to_numpy()
+
+    return dat
