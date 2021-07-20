@@ -293,7 +293,7 @@ def extract_task_activity(timeseries, legacy_EVs):
     return dat
 
 
-def construct_design_matrix(EVs):
+def construct_design_matrix(EVs, plot=False):
     """
     Construct full design matrix for trial-level estimates of first-level betas.
     Uses 'spm' HRF model with polynomial (5) order drift and without derivatives.
@@ -313,4 +313,75 @@ def construct_design_matrix(EVs):
     frame_times = frame_times = np.arange(0, TR * 405, TR)
     design_matrix = make_first_level_design_matrix(frame_times, EVs, hrf_model="spm")
 
+    if plot:
+        plot_design_matrix(design_matrix)
+
     return design_matrix
+
+
+def fit_first_level_glm(timeseries, design_matrix):
+    """
+    Fit first-level GLM to get trial-level betas based on regressors from design matrix.
+
+    Parameters
+    ----------
+    timeseries : pd.DataFrame, shape = (405, 360+k)
+        Dataframe containing raw BOLD activity with region labels.
+    design_matrix : pd.DataFrame
+        Dataframe containing full design matrix with columns as regressors.
+
+    Returns
+    -------
+    betas : pd.DataFrame, shape = (80, 360)
+        Beta estimates for each trial and parcel.
+
+    """
+    # Get only numeric part of dataframe corresponding to BOLD activity
+    dat = timeseries.iloc[:, :360]
+
+    # Fit GLM using OLS
+    labels, results = run_glm(
+        Y=dat, X=design_matrix, noise_model="ols", n_jobs=-1, verbose=5,
+    )
+
+    # Extract betas for each trial and prepare clean dataframe
+    betas = pd.DataFrame(
+        results[0.0].theta[:80, :],
+        index=design_matrix.columns[:80],
+        columns=dat.columns,
+    )
+
+    return betas
+
+
+def compute_betas(timeseries, EVs):
+    """
+    Compute first-level beta estimates from timeseries data based on relevant variables.
+    Wrapper around construct_design_matrix() and fit_first_level_glm().
+
+    Parameters
+    ----------
+    timeseries : pd.DataFrame, shape = (405, 360+k)
+        Dataframe containing raw BOLD activity with region labels.
+    EVs : pd.DataFrame
+        Dataframe with onsets and metadata for all 80 trials in specified run.
+        Obtain using load_single_EVs()
+
+    Returns
+    -------
+    betas : pd.DataFrame, shape = (80, 360 + k)
+        Beta estimates for each trial and parcel with identifiers.
+
+    """
+    # Construct design matrix
+    design_matrix = construct_design_matrix(EVs, plot=False)
+
+    # Compute beta estimates
+    betas = fit_first_level_glm(timeseries, design_matrix)
+
+    # Add identifiers and return
+    betas = betas.join(
+        pd.concat([EVs.set_index("trial_type")], axis=1, keys=["identifiers"])
+    )
+
+    return betas
