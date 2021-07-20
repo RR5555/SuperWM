@@ -25,7 +25,7 @@ TR = 0.72  # Time resolution, in seconds
 HEMIS = ["Right", "Left"]
 
 # Each experiment was repeated twice in each subject
-RUNS = ["LR", "RL"]
+RUNS = {"LR": 7, "RL": 8}
 N_RUNS = 2
 
 # Task conditions for WM experiment
@@ -79,3 +79,45 @@ def load_regions(fname):
     )
 
     return region_info
+
+
+def load_single_timeseries(HCP_DIR, subject, run, regions, remove_mean=True):
+    """
+    Load timeseries data for a single subject and single run.
+
+    Parameters
+    ----------
+    HCP_DIR : str or Path object
+        Full path to root directory containing dataset.
+    subject : int
+        Subject ID to load.
+    run : str
+        Run to load, LR: 7, RL: 8.
+    regions: pd.DataFrame
+        Identifiers for all 360 parcels obtained from load_regions()
+    remove_mean : bool, optional
+        Subtract parcel-wise mean BOLD signal. The default is True.
+
+    Returns
+    -------
+    ts : pd.DataFrame
+        Dataframe of shape (n_frames, n_parcels) containing BOLD values.
+        Full data per subject per run has size (405, 360)
+
+    """
+    # Prepare filename from input arguments
+    bold_run = RUNS[run]
+    bold_path = f"{HCP_DIR}/subjects/{subject}/timeseries/"
+    bold_file = f"bold{bold_run}_Atlas_MSMAll_Glasser360Cortical.npy"
+
+    # Load data and remove mean if requested
+    ts = np.load(f"{bold_path}/{bold_file}")
+    if remove_mean:
+        ts -= ts.mean(axis=1, keepdims=True)
+
+    # Convert to Dataframe, add identifiers and return
+    ts = pd.DataFrame(ts, index=[regions["name"], regions["network"]]).T
+    ts["Subject"] = subject
+    ts["Run"] = run
+
+    return ts
