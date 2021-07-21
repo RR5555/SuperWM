@@ -1,5 +1,6 @@
 from configuration import EXPERIMENTS, N_SUBJECTS
-from shared_configuration import HCP_DIR, RESULT_DIR, TR
+from shared_configuration import HCP_DIR, RESULT_DIR, TR,\
+	INIT_CONDS, ACC_EVENT_COND, RUNS
 from help_fct import load_single_timeseries
 from save_N_load import save_obj, load_obj
 
@@ -140,11 +141,11 @@ def get_frames(_onset, _duration):
 	frames = start + np.arange(0, duration) 
 	return frames
 
+#TODO: simply with the imported parameters
 def dict_timeframes(_dict_timestamps):
-	block_cond = ('0bk_body', '0bk_faces', '0bk_places', '0bk_tools',
-		'2bk_body', '2bk_faces', '2bk_places', '2bk_tools')
-	run_type = ('LR', 'RL')
-	abridged_event_cond = ('cor', 'err',  'nlr')
+	block_cond = INIT_CONDS
+	run_type = RUNS
+	abridged_event_cond = ACC_EVENT_COND
 
 	_dict = {subj:{run:{cond:{event_cond:None for event_cond in list(abridged_event_cond)+['block', 'cue']} for cond in block_cond} for run in run_type} for subj in range(N_SUBJECTS)}
 	for subj in range(N_SUBJECTS):
@@ -172,7 +173,7 @@ def get_dict_timeframes():
 	return _dict
 
 _dict_timeframes = get_dict_timeframes()
-def get_timeseries(subject, run, cond, event):
-	data =load_single_timeseries(subject=subject,experiment='WM',run= 0 if run=='RL' else 1,remove_mean=True)
+def get_timeseries(subject, run, cond, event, _remove_mean=False):
+	data =load_single_timeseries(subject=subject,experiment='WM',run= 0 if run=='RL' else 1,remove_mean=_remove_mean)
 	timeseries = [data[:,frames] for frames in _dict_timeframes[subject][run][cond][event]]
 	return timeseries

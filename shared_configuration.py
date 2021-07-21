@@ -20,3 +20,6 @@ INIT_CONDS = ['0bk_body','0bk_faces','0bk_places','0bk_tools',
 				'2bk_body','2bk_faces','2bk_places','2bk_tools']
 
 TASK_KEY = ['tfMRI_WM_'+'RL','tfMRI_WM_'+'LR']
+
+ACC_EVENT_COND = ('cor', 'err',  'nlr')
+ALL_EVENT_COND = ['block', 'cue'].extend(ACC_EVENT_COND)
