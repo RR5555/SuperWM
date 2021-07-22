@@ -1,3 +1,4 @@
+from base_fct import print_N_log
 from help_fct import load_single_timeseries,\
 	beh_load_single_timeseries
 from event_data import get_timeseries
@@ -27,7 +28,7 @@ def get_raw_dataset_for_n_back_diff_agg(dataset_desc_dict, preproc_fct=lambda x:
 	# print(_data[0].shape)
 	# print(_labels)
 	# exit()
-	print(np.ones((len(_labels),1)).shape, np.stack((x.mean(axis=1, keepdims=False) for x in _data), axis=0).shape)
+	print_N_log(f"{np.ones((len(_labels),1)).shape}, {np.stack((x.mean(axis=1, keepdims=False) for x in _data), axis=0).shape}", log_dst='debug')
 	_tmp = np.stack((x.mean(axis=1, keepdims=False) for x in _data), axis=0)
 	_tmp = _preproc(_tmp)
 	return _tmp if not include_bias else  np.concatenate((np.ones((len(_labels),1)), _tmp), axis=1), np.array(_labels)
@@ -47,7 +48,7 @@ def get_raw_dataset_for_n_back_diff(dataset_desc_dict, preproc_fct=lambda x: x, 
 	# print(_data[0].shape)
 	# print(_labels)
 	# exit()
-	print(np.ones((len(_labels),1)).shape, np.stack((x.flatten() for x in _data), axis=0).shape)
+	print_N_log(f"{np.ones((len(_labels),1)).shape}, {np.stack((x.flatten() for x in _data), axis=0).shape}", log_dst='debug')
 	_tmp = np.stack((x.flatten() for x in _data), axis=0)
 	_tmp = _preproc(_tmp)
 	return _tmp if not include_bias else  np.concatenate((np.ones((len(_labels),1)), _tmp), axis=1), np.array(_labels)

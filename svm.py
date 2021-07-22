@@ -1,6 +1,8 @@
 from prepare_dataset import get_raw_dataset_for_n_back_diff,\
     DATASET_DICT, get_raw_dataset_for_n_back_diff_agg
 
+import torch
+import torch.nn as nn
 import sklearn
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
@@ -36,7 +38,18 @@ def thunder_svm_raw_dataset_for_n_back_diff(dataset_name, _test_size=.33, _rando
 	SVM.fit(X_train, y_train)
 	return SVM, X_train, X_test, y_train, y_test
 
+class pth_SVM(nn.Module):
+	def __init__(self, input_size, output_size, size_average=None, reduce=None, reduction='mean', margin=1.):
+		super(pth_SVM, self).__init__()
+		self.fc = nn.Linear(input_size, output_size)
+		# self.loss = nn.MultiLabelMarginLoss(size_average=None, reduce=None, reduction=reduction)
+		self.loss = nn.MultiMarginLoss(margin=margin, size_average=None, reduce=None, reduction=reduction)
 
+	def forward(self, x):
+		_tmp = self.fc(x)
+		return torch.cat((-_tmp,_tmp), dim=1)
+
+    
 
 # SVM on raw initial data for accuracy differentiation
 # SVM on HRF for n-back differentiation
